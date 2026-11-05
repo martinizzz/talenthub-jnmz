@@ -1,0 +1,10 @@
+./INSTALACION-COMPLETA-MAC-WINDOWS.md
+node_modules/
+.nuxt/
+.output/
+apps/web/.env
+apps/api/config/local.php
+.DS_Store
+coverage/
+*.log
+*.zip
