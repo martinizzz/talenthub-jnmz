@@ -12,15 +12,16 @@ final class Config {
         }
         $enviroment = getenv(strtoupper($key));
          # getenv busca una variable de entorno y strtoupper lo convierte a mayusculas
-         return $enviroment !== false ? $enviroment !== '' ? $enviroment : 
-         (self :: $values [$key] ?? null);
+         return ($enviroment !== false && $enviroment !== '') 
+         ? $enviroment 
+         : (self :: $values [$key] ?? null);
          # si getenv devuelve algo, lo devuelve, sino lo que esta en $values 
     }
 
     public static function required (string $key) : string {
         $value = self::get($key);
-        if (!is_string($value || $value === '' || str_contains($value , 'REEMPLAZAR') ||
-         $value === 'tu-proyecto')){
+        if (!is_string($value) || $value === '' || str_contains($value , 'REEMPLAZAR') ||
+         $value === 'tu-proyecto'){
             throw new ApiException('Configura'. $key . 'en config/local.php', 503);         
         }
         return $value;
