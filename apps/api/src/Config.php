@@ -22,7 +22,7 @@ final class Config {
         $value = self::get($key);
         if (!is_string($value) || $value === '' || str_contains($value , 'REEMPLAZAR') ||
          $value === 'tu-proyecto'){
-            throw new ApiException('Configura'. $key . 'en config/local.php', 503);         
+            throw new ApiException('Configura ' . $key . ' en config/local.php.', 503);         
         }
         return $value;
     }

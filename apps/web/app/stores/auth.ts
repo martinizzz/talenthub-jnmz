@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, type User } from 'firebase/auth'
 import type { Profile, Role } from '~/types'
+import { getCurrentWatcher } from 'vue'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = shallowRef<User | null>(null)
@@ -8,6 +9,7 @@ export const useAuthStore = defineStore('auth', () => {
   const ready = ref(false)
   const busy = ref(false)
   let initialized = false
+  let creatingProfile = false
 
   async function loadProfile() {
     const currentUid = user.value?.uid
@@ -25,19 +27,34 @@ export const useAuthStore = defineStore('auth', () => {
     if (initialized || !import.meta.client) return
     initialized = true
     const auth = useNuxtApp().$firebaseAuth
-    if (!auth) { ready.value = true; return }
+    if (!auth) {
+      ready.value = true
+      return 
+    }
     onAuthStateChanged(auth, async (current) => {
-      if (user.value?.uid !== current?.uid) profile.value = null
-      user.value = current
-      await loadProfile()
+      if(user.value?.uid !== current?.uid) {
+        profile.value = null
+      }
+      user.value = current 
+
+      if (!creatingProfile) {
+        await loadProfile()
+      }
       ready.value = true
     })
   }
 
-  async function register(input: { email: string; password: string; name: string; role: Exclude<Role, 'ADMIN'>; companyName: string; university: string }) {
+  async function register(input: { 
+     email: string;
+     password: string; 
+     name: string; 
+     role: Exclude<Role, 'ADMIN'>; 
+     companyName: string; 
+     university: string })  {
     const auth = useNuxtApp().$firebaseAuth
     if (!auth) throw new Error('Configura Firebase antes de registrarte.')
     busy.value = true
+    creatingProfile = true
     try {
       if (auth.currentUser?.email?.toLowerCase() === input.email.toLowerCase()) {
         user.value = auth.currentUser
@@ -45,10 +62,21 @@ export const useAuthStore = defineStore('auth', () => {
         const credential = await createUserWithEmailAndPassword(auth, input.email, input.password)
         user.value = credential.user
       }
-      profile.value = await useApi().request<Profile>('/profiles', { method: 'POST', body: {
-        name: input.name, role: input.role, companyName: input.companyName, university: input.university
-      } })
-    } finally { busy.value = false }
+      const createdProfile = await useApi().request<Profile>(
+        '/profiles', 
+        {
+        method: 'POST',
+        body: {
+          name: input.name,
+          role: input.role,
+          companyName: input.companyName,
+          university: input.university
+          }
+        }
+      )
+      profile.value = createdProfile
+    } finally { creatingProfile = false ,busy.value = false }
+
   }
 
   async function login(email: string, password: string) {
